@@ -1,15 +1,9 @@
-<table>
-  <tr>
-    <td width="80">
-      <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" width="80"/>
-    </td>
-    <td>
-      <span style="font-size:1.7em; font-weight:bold">
-        Co-Reward: Self-Supervised RL for LLM Reasoning via Contrastive Agreement
-      </span><br>
-    </td>
-  </tr>
-</table>
+<div style="text-align: center; margin-top: 32px;">
+  <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" style="max-width: 200px; width: 60%; margin-bottom: 20px;">
+  <div style="font-size: 2em; font-weight: bold;">
+    Co-Reward: Self-Supervised RL for LLM Reasoning via Contrastive Agreement
+  </div>
+</div>
 
 ---
 
