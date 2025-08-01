@@ -3,8 +3,10 @@
 </p>
 
 ## Co-Reward: Self-Supervised RL for LLM Reasoning via Contrastive Agreement
----
+
 [📄 Paper](./CoReward-paper.pdf)
+
+![Pipeline](figs/CoReward_pipeline.png)
 
 **Co-Reward** is a self-supervised reinforcement learning method for LLM reasoning, which leverages contrastive agreement between original and rephrased questions, enabling them to serve as reward signals for each other during training. It effectively mitigates the training collapse of existing self-reward reasoning methods, such as Entroy Minimization, Intuitor, and Majority-Voting.
 
