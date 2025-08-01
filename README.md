@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" width="120"/>
+  <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" width="150"/>
 </p>
 
 ## Co-Reward: Self-Supervised RL for LLM Reasoning via Contrastive Agreement
@@ -37,7 +37,7 @@ This is an initial version of the code. We will make the following updates in th
 - [ ] [Code] Update the evaluation code
 - [ ] [Paper] Update the Arxiv paper link
 - [ ] [Environment] Update the runing environment file
-- [x] [Readme] Update the README
+- [ ] [Readme] Update the README
 
 
 ## 📄 Citation
