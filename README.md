@@ -1,10 +1,16 @@
 <p align="center">
-  <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" width="150"/>
+  <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" width="300"/>
 </p>
 
-## Co-Reward: Self-Supervised Reinforcement Learning for Large Language Model Reasoning via Contrastive Agreement
+<h1 align="center"><b>Co-Reward: Self-Supervised Reinforcement Learning for Large Language Model Reasoning via Contrastive Agreement</b></h1>
 
-[📄 Paper](./CoReward-paper.pdf)
+<p align="center">
+  <a href="./CoReward-paper.pdf"><img src="https://img.shields.io/badge/Paper-v1-pend.svg" alt="Paper"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-red.svg" alt="Liscence"></a>
+  <img src="https://img.shields.io/github/stars/resistzzz/Co-Reward?color=yellow&label=Star" alt="Stars" >
+</p>
+
+Our current version can be found in [📄 Paper](./CoReward-paper.pdf).
 
 ![Pipeline](figs/CoReward_pipeline.png)
 
@@ -45,5 +51,6 @@ This is an initial version of the code. We will make the following updates in th
 ## 📄 Citation
 
 Our Paper is pending on the Arxiv processing, waiting to be online.
+
 
 
