@@ -50,7 +50,8 @@ This is an initial version of the code. We will make the following updates in th
 
 ## 📄 Citation
 
-Our Paper is pending on the Arxiv processing, waiting to be online.
+Our Paper is pending on the Arxiv processing, currently accessible in this repo yet waiting to be online.
+
 
 
 
