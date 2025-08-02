@@ -2,7 +2,7 @@
   <img src="figs/CoReward_logo.png" alt="Co-Reward Logo" width="150"/>
 </p>
 
-## Co-Reward: Self-Supervised RL for LLM Reasoning via Contrastive Agreement
+## Co-Reward: Self-Supervised Reinforcement Learning for Large Language Model Reasoning via Contrastive Agreement
 
 [📄 Paper](./CoReward-paper.pdf)
 
@@ -45,4 +45,5 @@ This is an initial version of the code. We will make the following updates in th
 ## 📄 Citation
 
 Our Paper is pending on the Arxiv processing, waiting to be online.
+
 
