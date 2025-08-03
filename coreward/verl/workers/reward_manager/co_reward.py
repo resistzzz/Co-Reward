@@ -21,10 +21,6 @@ from verl.utils.reward_score import _default_compute_score
 
 
 def majority_vote(ans_list, empty_value=''):
-    """
-    从答案列表中投票选出最多的那个答案。
-    如果全是空/None，则返回 empty_value（可以指定为 0、''、'[NO_ANSWER]'等）。
-    """
     ans_list = [a for a in ans_list if a is not None and str(a).strip() != '']
     if not ans_list:
         return empty_value  # 或 return 0, 或 return '[NO_ANSWER]'
@@ -42,7 +38,6 @@ class CoRewardManager:
         self.reward_fn_key = reward_fn_key
 
     def _extract_valid_response_str(self, item):
-        # 从 item 提取有效 response 的 tokenizer.decode 字符串
         prompt_ids = item.batch["prompts"]
         prompt_length = prompt_ids.shape[-1]
         valid_prompt_length = item.batch["attention_mask"][:prompt_length].sum()
@@ -55,7 +50,6 @@ class CoRewardManager:
     def __call__(self, data_ori: DataProto, data_aug: DataProto, return_dict=False):
         """We will expand this function gradually based on the available datasets"""
         assert len(data_ori) == len(data_aug), "The original and augmented data must have the same length."
-        # 1. 分别对 ori/aug 按 uid 分组
         ori_uid2answers = defaultdict(list)
         ori_all_answers = []
         for i, item in enumerate(data_ori):
@@ -71,15 +65,12 @@ class CoRewardManager:
             aug_uid2answers[uid].append(ans)
             aug_all_answers.append(ans)
         
-        # 2. 分别做 majority vote，得到每个 uid 的 pseudo label
         ori_uid2pseudo = {uid: majority_vote(ans_list, empty_value='') for uid, ans_list in aug_uid2answers.items()}
         aug_uid2pseudo = {uid: majority_vote(ans_list, empty_value='') for uid, ans_list in ori_uid2answers.items()}
  
-        # 3. 分别写 reward tensor
         reward_tensor_ori = torch.zeros_like(data_ori.batch["responses"], dtype=torch.float32)
         reward_tensor_aug = torch.zeros_like(data_aug.batch["responses"], dtype=torch.float32)
 
-        # ori 用 aug 的 pseudo label 计算 reward
         N = len(data_ori) 
         for i in range(N):
             item = data_ori[i]

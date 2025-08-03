@@ -666,33 +666,10 @@ class ActorRolloutRefWorker(Worker):
             data = self.ulysses_sharding_manager.preprocess_data(data)
             # breakpoint()
             mode = self.config.get('algorithm', None)
-            calculate_self_certainty = False
-            calculate_sentence_certainty = False
-            calculate_sentence_entropy = False
-            calculate_sentence_avg_prob = False
-            if mode == "self_certainty":
-                calculate_self_certainty = True
-            elif mode == 'sentence_certainty':
-                calculate_sentence_certainty = True
-            elif mode == "sentence_entropy":
-                calculate_sentence_entropy = True
-            elif mode == 'sentence_avg_prob':
-                calculate_sentence_avg_prob = True
-            output, entropys, self_certaintys, sentence_certainty, sentence_entropy, sentence_avg_prob = self.actor.compute_log_prob(data=data, calculate_entropy=True, 
-                                                                                                                  calculate_self_certainty=calculate_self_certainty, 
-                                                                                                                  calculate_sentence_certainty=calculate_sentence_certainty, 
-                                                                                                                  calculate_sentence_entropy=calculate_sentence_entropy, calculate_sentence_avg_prob=calculate_sentence_avg_prob)
+            output, entropys = self.actor.compute_log_prob(data=data, calculate_entropy=True)
             output_dict = {"old_log_probs": output}
             if entropys is not None:
                 output_dict["entropys"] = entropys
-            if calculate_self_certainty and self_certaintys is not None:
-                output_dict["self_certaintys"] = self_certaintys
-            if calculate_sentence_certainty and sentence_certainty is not None:
-                output_dict["sentence_certainty"] = sentence_certainty
-            if calculate_sentence_entropy and sentence_entropy is not None:
-                output_dict["sentence_entropy"] = sentence_entropy
-            if calculate_sentence_avg_prob and sentence_avg_prob is not None:
-                output_dict['sentence_avg_prob'] = sentence_avg_prob
             output = DataProto.from_dict(
                 tensors=output_dict,
                 meta_info={"temperature": self.config.rollout.temperature},
@@ -741,18 +718,8 @@ class ActorRolloutRefWorker(Worker):
         with self.ulysses_sharding_manager:
             data = self.ulysses_sharding_manager.preprocess_data(data)
             
-            # Add by me
-            calculate_sentence_avg_prob = False
-            mode = self.config.get('algorithm', None)
-            if mode == 'sentence_avg_prob':
-                calculate_sentence_avg_prob = True
-            
-            output, _, _, _, _, sentence_avg_prob  = self.ref_policy.compute_log_prob(data=data, calculate_entropy=False, calculate_self_certainty=False, calculate_sentence_certainty=False, calculate_sentence_entropy=False, calculate_sentence_avg_prob=calculate_sentence_avg_prob)
-            if calculate_sentence_avg_prob and sentence_avg_prob is not None:
-                output = DataProto.from_dict(tensors={"ref_log_prob": output, 'ref_sentence_avg_prob': sentence_avg_prob})
-            else:
-                output = DataProto.from_dict(tensors={"ref_log_prob": output})
-            
+            output, _ = self.ref_policy.compute_log_prob(data=data, calculate_entropy=False)
+            output = DataProto.from_dict(tensors={"ref_log_prob": output})
             output = self.ulysses_sharding_manager.postprocess_data(output)
 
         output = output.to("cpu")

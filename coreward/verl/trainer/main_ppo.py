@@ -23,8 +23,6 @@ import ray
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 from verl.trainer.ppo.reward import load_reward_manager
 
-print('hello')
-
 def get_custom_reward_fn(config):
     import importlib.util
     import sys
@@ -80,7 +78,6 @@ def run_ppo(config) -> None:
 @ray.remote(num_cpus=1)  # please make sure main_task is not scheduled on head
 class TaskRunner:
     def run(self, config):
-        # print initial config
         from pprint import pprint
 
         from omegaconf import OmegaConf
@@ -90,19 +87,12 @@ class TaskRunner:
         pprint(OmegaConf.to_container(config, resolve=True))  # resolve=True will eval symbol values
         OmegaConf.resolve(config)
 
-        # download the checkpoint from hdfs
         local_path = copy_to_local(config.actor_rollout_ref.model.path)
-        pprint(f"Local Path {local_path}")
-        # instantiate tokenizer
         from verl.utils import hf_processor, hf_tokenizer
 
         trust_remote_code = config.data.get("trust_remote_code", False)
-        pprint(f"trust_remote_code {trust_remote_code}")
         tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
-        pprint("Tokenizer get!!!!")
         processor = hf_processor(local_path, use_fast=True)  # used for multimodal LLM, could be none
-        pprint("processor get!!!!")
-        # define worker classes
         if config.actor_rollout_ref.actor.strategy in ["fsdp", "fsdp2"]:
             assert config.critic.strategy in ["fsdp", "fsdp2"]
             from verl.single_controller.ray import RayWorkerGroup
@@ -137,12 +127,6 @@ class TaskRunner:
             Role.Critic: global_pool_id,
         }
 
-        # we should adopt a multi-source reward function here
-        # - for rule-based rm, we directly call a reward score
-        # - for model-based rm, we call a model
-        # - for code related prompt, we send to a sandbox if there are test cases
-        # - finally, we combine all the rewards together
-        # - The reward type depends on the tag of the data
         if config.reward_model.enable:
             if config.reward_model.strategy in ["fsdp", "fsdp2"]:
                 from verl.workers.fsdp_workers import RewardModelWorker
@@ -164,14 +148,6 @@ class TaskRunner:
 
         from verl.utils.dataset.rl_dataset import collate_fn
         from verl.utils.dataset.pair_dataset import pair_collate_fn
-
-        # # Dataset: (RLHFDataset, RLHFDataset -> PairAugmentationDataset)
-        # train_dataset = create_rl_dataset(config.data.train_files, config.data, tokenizer, processor)       # train_data: RLHFDataset 
-        # train_aug_dataset = create_rl_dataset(config.data.train_aug_files, config.data, tokenizer, processor)
-        # from verl.utils.dataset.pair_dataset import PairAugmentationDataset
-        # train_pair_dataset = PairAugmentationDataset(train_dataset, train_aug_dataset)
-        
-        # V1 version of PairAugmentationDataset
         from verl.utils.dataset.pair_dataset import PairAugmentationDatasetV1
         
         train_dataset = PairAugmentationDatasetV1(
@@ -183,7 +159,6 @@ class TaskRunner:
         )
 
         val_dataset = create_rl_dataset(config.data.val_files, config.data, tokenizer, processor)
-        pprint("Dataset get!!!!")
         train_sampler = create_rl_sampler(config.data, train_dataset)
         trainer = RayPPOTrainer(
             config=config,
@@ -201,7 +176,6 @@ class TaskRunner:
             train_sampler=train_sampler,
         )
         trainer.init_workers()
-        # trainer.fit()
         trainer.fit_coreward()
 
 

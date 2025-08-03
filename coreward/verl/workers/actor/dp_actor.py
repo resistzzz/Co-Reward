@@ -64,31 +64,6 @@ class DataParallelPPOActor(BasePPOActor):
             if self.config.get("use_torch_compile", True)  #  use torch compile by default
             else verl_F.entropy_from_logits
         )
-
-        self.compute_self_certainty_from_logits = (
-            torch.compile(verl_F.self_certainty_from_logits, dynamic=True)
-            if self.config.get("use_torch_compile", True)  #  use torch compile by default
-            else verl_F.self_certainty_from_logits
-        )
-        
-        self.compute_sentence_level_certainty_from_logits = (
-            torch.compile(verl_F.sentence_level_certainty_from_logits, dynamic=True)
-            if self.config.get("use_torch_compile", True)  #  use torch compile by default
-            else verl_F.sentence_level_certainty_from_logits
-        )
-        # self.compute_sentence_level_certainty_from_logits = verl_F.sentence_level_certainty_from_logits
-
-        self.compute_sentence_entropy_from_logits = (
-            torch.compile(verl_F.sentence_entropy_from_logits, dynamic=True)
-            if self.config.get("use_torch_compile", True)  #  use torch compile by default
-            else verl_F.sentence_entropy_from_logits
-        )
-        
-        self.compute_avg_sentence_probs = (
-            torch.compile(verl_F.sentence_avg_probs, dynamic=True)
-            if self.config.get("use_torch_compile", True)  #  use torch compile by default
-            else verl_F.sentence_avg_probs            
-        )
         
         if self.use_fused_kernels:
             from verl.utils.experimental.torch_functional import FusedLinearForPPO
@@ -101,11 +76,7 @@ class DataParallelPPOActor(BasePPOActor):
 
     def _forward_micro_batch(
         self, micro_batch, temperature, 
-        calculate_entropy=False, 
-        calculate_self_certainty=False, 
-        calculate_sentence_certainty=False,
-        calculate_sentence_entropy=False,
-        calculate_sentence_avg_prob=False) -> Tuple[torch.Tensor, torch.Tensor]:
+        calculate_entropy=False) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns:
             entropy: # (bs, response_len)
@@ -123,10 +94,6 @@ class DataParallelPPOActor(BasePPOActor):
             attention_mask = micro_batch["attention_mask"]
             position_ids = micro_batch["position_ids"]
             entropy = None
-            self_certainty = None
-            sentence_certainty = None
-            sentence_entropy = None
-            sentence_avg_prob = None
             if position_ids.dim() == 3:  # qwen2vl mrope
                 position_ids = position_ids.transpose(0, 1)  # (bsz, 3, seqlen) -> (3, bsz, seqlen)
  
@@ -177,9 +144,6 @@ class DataParallelPPOActor(BasePPOActor):
                         input_ids=input_ids_rmpad_rolled,
                         temperature=temperature,
                     )
-                    self_certainty_rmpad = None  # TODO: add self_certainty_rmpad
-                    sentence_certainty = None     # TODO: add sentence_certainty_rmpad
-                    sentence_entropy = None
 
                 else:
                     logits_rmpad = output.logits.squeeze(0)  # (total_nnz, vocab_size)
@@ -200,14 +164,6 @@ class DataParallelPPOActor(BasePPOActor):
                     # compute entropy
                     if calculate_entropy:
                         entropy_rmpad = self.compute_entropy_from_logits(logits_rmpad)  # ((total_nnz / sp) + pad)
-                    if calculate_self_certainty:
-                        self_certainty_rmpad = self.compute_self_certainty_from_logits(logits_rmpad)  # ((total_nnz / sp) + pad)
-                    if calculate_sentence_certainty:
-                        sentence_certainty = self.compute_sentence_level_certainty_from_logits(logits_rmpad, attention_mask=attention_mask, indices=indices, batch_size=batch_size)
-                    if calculate_sentence_entropy:
-                        sentence_entropy = self.compute_sentence_entropy_from_logits(logits_rmpad, attention_mask=attention_mask, indices=indices, batch_size=batch_size)
-                    if calculate_sentence_avg_prob:
-                        sentence_avg_prob = self.compute_avg_sentence_probs(logits_rmpad, attention_mask=attention_mask, indices=indices, batch_size=batch_size)
                     
                 # gather log_prob if sp > 1
                 if self.use_ulysses_sp:
@@ -225,13 +181,6 @@ class DataParallelPPOActor(BasePPOActor):
                             unpad_dim=0,
                             padding_size=pad_size,
                         )
-                    if calculate_self_certainty:
-                        self_certainty_rmpad = gather_outpus_and_unpad(
-                            self_certainty_rmpad,
-                            gather_dim=0,
-                            unpad_dim=0,
-                            padding_size=pad_size,
-                        )
 
                 # pad back to (bsz, seqlen)
                 if calculate_entropy:
@@ -241,14 +190,7 @@ class DataParallelPPOActor(BasePPOActor):
                         batch=batch_size,
                         seqlen=seqlen,
                     )
-                if calculate_self_certainty:
-                    full_self_certainty = pad_input(
-                        hidden_states=self_certainty_rmpad.unsqueeze(-1),
-                        indices=indices,
-                        batch=batch_size,
-                        seqlen=seqlen,
-                    )
- 
+
                 full_log_probs = pad_input(
                     hidden_states=log_probs.unsqueeze(-1),
                     indices=indices,
@@ -259,14 +201,6 @@ class DataParallelPPOActor(BasePPOActor):
                 # only return response part:
                 if calculate_entropy:
                     entropy = full_entropy.squeeze(-1)[:, -response_length - 1 : -1]  # (bsz, response_length)
-                if calculate_self_certainty:
-                    self_certainty = full_self_certainty.squeeze(-1)[:, -response_length - 1 : -1]  # (bsz, response_length)
-                if calculate_sentence_certainty:
-                    sentence_certainty = sentence_certainty          # (bsz,)
-                if calculate_sentence_entropy:
-                    sentence_entropy = sentence_entropy
-                if calculate_sentence_avg_prob:
-                    sentence_avg_prob = sentence_avg_prob
                 log_probs = full_log_probs.squeeze(-1)[:, -response_length - 1 : -1]  # (bsz, response_length)
 
             else:  # not using rmpad and no ulysses sp
@@ -288,10 +222,6 @@ class DataParallelPPOActor(BasePPOActor):
                         input_ids=micro_batch["responses"],
                         temperature=temperature,
                     )
-                    self_certainty = None  # TODO: add self_certainty
-                    sentence_certainty = None     # TODO: add sentence_certainty
-                    sentence_entropy = None
-                    sentence_avg_prob = None
                 else:
                     logits = output.logits
 
@@ -301,15 +231,7 @@ class DataParallelPPOActor(BasePPOActor):
                     response_mask = attention_mask[:, -response_length:]
                     if calculate_entropy:
                         entropy = verl_F.entropy_from_logits(logits)  # (bsz, response_length)
-                    if calculate_self_certainty:
-                        self_certainty = verl_F.self_certainty_from_logits(logits)  # (bsz, response_length)
-                    if calculate_sentence_certainty:
-                        sentence_certainty = verl_F.sentence_level_certainty_from_logits(logits, response_mask=response_mask, batch_size=batch_size)
-                    if calculate_sentence_entropy:
-                        sentence_entropy = verl_F.sentence_entropy_from_logits(logits, response_mask=response_mask, batch_size=batch_size)
-                    if calculate_sentence_avg_prob:
-                        sentence_avg_prob = verl_F.sentence_avg_probs(logits, response_mask=response_mask, batch_size=batch_size)
-            return entropy, log_probs, self_certainty, sentence_certainty, sentence_entropy, sentence_avg_prob
+            return entropy, log_probs
 
     def _optimizer_step(self):
         assert self.config.grad_clip is not None
@@ -330,7 +252,7 @@ class DataParallelPPOActor(BasePPOActor):
         return grad_norm
 
     @GPUMemoryLogger(role="dp actor", logger=logger)
-    def compute_log_prob(self, data: DataProto, calculate_entropy=False, calculate_self_certainty=False, calculate_sentence_certainty=False, calculate_sentence_entropy=False, calculate_sentence_avg_prob=False) -> torch.Tensor:
+    def compute_log_prob(self, data: DataProto, calculate_entropy=False) -> torch.Tensor:
         """Compute the log probability of the responses given input_ids, attention_mask and position_ids
 
         Args:
@@ -372,48 +294,20 @@ class DataParallelPPOActor(BasePPOActor):
 
         log_probs_lst = []
         entropy_lst = []
-        self_certainty_lst = []
-        sentence_certainty_lst = []
-        sentence_entropy_lst = []
-        sentence_avg_prob_lst = []
         for micro_batch in micro_batches:
             if isinstance(micro_batch, DataProto):
                 micro_batch = {**micro_batch.batch, **micro_batch.non_tensor_batch}
             with torch.no_grad():
-                entropy, log_probs, self_certainty, sentence_certainty, sentence_entropy, sentence_avg_prob = self._forward_micro_batch(micro_batch, temperature=temperature, 
-                                                                                                                     calculate_entropy=calculate_entropy, 
-                                                                                                                     calculate_self_certainty=calculate_self_certainty, 
-                                                                                                                     calculate_sentence_certainty=calculate_sentence_certainty,
-                                                                                                                     calculate_sentence_entropy=calculate_sentence_entropy,
-                                                                                                                     calculate_sentence_avg_prob=calculate_sentence_avg_prob)
+                entropy, log_probs = self._forward_micro_batch(micro_batch, temperature=temperature, 
+                                                                                                                     calculate_entropy=calculate_entropy)
             log_probs_lst.append(log_probs)
             if calculate_entropy:
                 entropy_lst.append(entropy)
-            if calculate_self_certainty:
-                self_certainty_lst.append(self_certainty)
-            if calculate_sentence_certainty:
-                sentence_certainty_lst.append(sentence_certainty)
-            if calculate_sentence_entropy:
-                sentence_entropy_lst.append(sentence_entropy)
-            if calculate_sentence_avg_prob:
-                sentence_avg_prob_lst.append(sentence_avg_prob)
 
         log_probs = torch.concat(log_probs_lst, dim=0)
         entropys = None
-        self_certaintys = None
-        sentence_certaintys = None
-        sentence_entropys = None
-        sentence_avg_probs = None
         if calculate_entropy:
             entropys = torch.concat(entropy_lst, dim=0)
-        if calculate_self_certainty:
-            self_certaintys = torch.concat(self_certainty_lst, dim=0)
-        if calculate_sentence_certainty:
-            sentence_certaintys = torch.concat(sentence_certainty_lst, dim=0)
-        if calculate_sentence_entropy:
-            sentence_entropys = torch.concat(sentence_entropy_lst, dim=0)
-        if calculate_sentence_avg_prob:
-            sentence_avg_probs = torch.concat(sentence_avg_prob_lst, dim=0)
         
         if use_dynamic_bsz:
             indices = list(itertools.chain.from_iterable(indices))
@@ -421,7 +315,7 @@ class DataParallelPPOActor(BasePPOActor):
             revert_indices = torch.tensor(get_reverse_idx(indices), dtype=torch.long)
             log_probs = log_probs[revert_indices]
 
-        return log_probs, entropys, self_certaintys, sentence_certaintys, sentence_entropys, sentence_avg_probs
+        return log_probs, entropys
 
     @GPUMemoryLogger(role="dp actor", logger=logger)
     def update_policy(self, data_ori: DataProto, data_aug: DataProto):
@@ -513,8 +407,8 @@ class DataParallelPPOActor(BasePPOActor):
                     calculate_entropy = False
                     if entropy_coeff != 0:
                         calculate_entropy = True
-                    entropy_ori, log_prob_ori, *_ = self._forward_micro_batch(micro_batch=data_o, temperature=temperature, calculate_entropy=calculate_entropy, calculate_self_certainty=False, calculate_sentence_certainty=False)
-                    entropy_aug, log_prob_aug, *_ = self._forward_micro_batch(micro_batch=data_a, temperature=temperature, calculate_entropy=calculate_entropy, calculate_self_certainty=False, calculate_sentence_certainty=False)
+                    entropy_ori, log_prob_ori, *_ = self._forward_micro_batch(micro_batch=data_o, temperature=temperature, calculate_entropy=calculate_entropy)
+                    entropy_aug, log_prob_aug, *_ = self._forward_micro_batch(micro_batch=data_a, temperature=temperature, calculate_entropy=calculate_entropy)
                     # breakpoint()
                     pg_loss_ori, pg_clipfrac_ori, ppo_kl_ori, pg_clipfrac_lower_ori = compute_policy_loss(
                         old_log_prob=old_log_prob_ori,
