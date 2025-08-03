@@ -20,6 +20,26 @@ Our current version can be found in [📄 Paper](./CoReward-paper.pdf).
 ![Performance](figs/performance.png)
 
 
+### Install Environment
+
+```bash
+# 1. create a clean conda environment
+conda create -y -n coreward python=3.10
+conda activate coreward
+
+# 2. clone the repository
+git clone https://github.com/tmlr-group/Co-Reward.git
+cd Co-Reward
+
+# 3. install external dependencies
+cd coreward
+bash scripts/install_env.sh
+
+# 4. add Coreward to PYTHONPATH in editable mode
+pip install -e . --no-deps
+```
+
+
 ### Training on MATH Dataset
 
 Modify the WANDB_KEY in the `coreward/math_co_reward.sh` script to your own WANDB key, then run the following command:
@@ -44,7 +64,7 @@ This is an initial version of the code. We will make the following updates in th
 - [ ] [Models] Release all of our trained LLM checkpoints
 - [ ] [Code] Update the evaluation code
 - [ ] [Paper] Update the Arxiv paper link
-- [ ] [Environment] Update the runing environment file
+- [x] [Environment] Update the runing environment file
 - [ ] [Readme] Update the README
 
 

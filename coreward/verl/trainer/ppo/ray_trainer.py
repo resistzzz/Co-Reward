@@ -917,13 +917,6 @@ class RayPPOTrainer:
         metrics.update(global_balance_stats)
     
     def fit_coreward(self):
-        # TODO: rewrite fit(self) with augmentation data
-        """
-        The training loop of PPO.
-        The driver process only need to call the compute functions of the worker group through RPC
-        to construct the PPO dataflow.
-        The light-weight advantage computation is done on the driver process.
-        """
         from omegaconf import OmegaConf
 
         from verl.utils.tracking import Tracking
@@ -937,11 +930,8 @@ class RayPPOTrainer:
 
         self.global_steps = 0
 
-        # load checkpoint before doing anything
         self._load_checkpoint()
 
-        # perform validation before training
-        # currently, we only support validation using the reward_function.
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):
             val_metrics = self._validate()
             assert val_metrics, f"{val_metrics=}"
@@ -950,10 +940,8 @@ class RayPPOTrainer:
             if self.config.trainer.get("val_only", False):
                 return
 
-        # add tqdm
         progress_bar = tqdm(total=self.total_training_steps, initial=self.global_steps, desc="Training Progress")
 
-        # we start from step 1
         self.global_steps += 1
         last_val_metrics = None
 
@@ -965,15 +953,11 @@ class RayPPOTrainer:
                 metrics = {}
                 timing_raw = {}
 
-                # TODO: Add batch_ori and batch_aug
                 batch_ori: DataProto = DataProto.from_single_dict(batch_dict["ori"])
                 batch_aug: DataProto = DataProto.from_single_dict(batch_dict["aug"])
-
-                # breakpoint()
-                # pop those keys for generation
                 batch_keys_to_pop = ["input_ids", "attention_mask", "position_ids"]
                 non_tensor_batch_keys_to_pop = ["raw_prompt_ids"]
-                # TODO: Add batch_ori and batch_aug to gen_batch
+
                 if "multi_modal_inputs" in batch_ori.non_tensor_batch or "multi_modal_inputs" in batch_aug.non_tensor_batch:
                     non_tensor_batch_keys_to_pop.extend(["multi_modal_data", "multi_modal_inputs"])
                 if "raw_prompt" in batch_ori.non_tensor_batch or "raw_prompt" in batch_aug.non_tensor_batch:
@@ -992,86 +976,36 @@ class RayPPOTrainer:
                 is_last_step = self.global_steps >= self.total_training_steps
 
                 with _timer("step", timing_raw):
-                    # generate a batch
                     with _timer("gen", timing_raw):
-                        # TODO: rollout with ori and aug gen_batch
                         if not self.async_rollout_mode:
                             gen_batch_output_ori = self.actor_rollout_wg.generate_sequences(gen_batch_ori)
                             gen_batch_output_aug = self.actor_rollout_wg.generate_sequences(gen_batch_aug)
                         else:
-                            self.async_rollout_manager.wake_up()
-                            # TODO: implement the async_rollout
-                            pass
-                            # gen_batch_output_ori = self.async_rollout_manager.generate_sequences(gen_batch_ori)
-                            # gen_batch_output_aug = self.async_rollout_manager.generate_sequences(gen_batch_aug)
-                            self.async_rollout_manager.sleep()
-                    # breakpoint()
-                    if self.config.algorithm.adv_estimator == AdvantageEstimator.REMAX:
-                        with _timer("gen_max", timing_raw):
-                            gen_baseline_batch_ori = deepcopy(gen_batch_ori)
-                            gen_baseline_batch_ori.meta_info["do_sample"] = False
-                            gen_baseline_output_ori = self.actor_rollout_wg.generate_sequences(gen_baseline_batch_ori)
-                            gen_baseline_batch_aug = deepcopy(gen_batch_aug)
-                            gen_baseline_batch_aug.meta_info["do_sample"] = False
-                            gen_baseline_output_aug = self.actor_rollout_wg.generate_sequences(gen_baseline_batch_aug)
+                            raise NotImplementedError("Async rollout mode is not implemented yet.")
 
-                            batch_ori = batch_ori.union(gen_baseline_output_ori)
-                            reward_baseline_tensor_ori = self.reward_fn(batch_ori)
-                            reward_baseline_tensor_ori = reward_baseline_tensor_ori.sum(dim=-1)
-                            batch_aug = batch_aug.union(gen_baseline_output_aug)
-                            reward_baseline_tensor_aug = self.reward_fn(batch_aug)
-                            reward_baseline_tensor_aug = reward_baseline_tensor_aug.sum(dim=-1)
-
-                            batch_ori.pop(batch_keys=list(gen_baseline_output_ori.batch.keys()))
-                            batch_aug.pop(batch_keys=list(gen_baseline_output_aug.batch.keys()))
-
-                            batch_ori.batch["reward_baselines"] = reward_baseline_tensor_ori
-                            batch_aug.batch["reward_baselines"] = reward_baseline_tensor_aug
-
-                            del gen_baseline_batch_ori, gen_baseline_output_ori, gen_baseline_batch_aug, gen_baseline_output_aug
-
-                    # breakpoint()
                     batch_ori.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch_ori.batch))], dtype=object)
                     batch_aug.non_tensor_batch["uid"] = batch_ori.non_tensor_batch["uid"]
 
-                    # repeat to align with repeated responses in rollout
                     batch_ori = batch_ori.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
                     batch_aug = batch_aug.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
                     batch_ori = batch_ori.union(gen_batch_output_ori)
                     batch_aug = batch_aug.union(gen_batch_output_aug)
                     
-                    # breakpoint()
-                    # print(batch_ori)
                     batch_ori.batch["response_mask"] = compute_response_mask(batch_ori)
                     batch_aug.batch["response_mask"] = compute_response_mask(batch_aug)
-                    # balance the number of valid tokens on each dp rank.
-                    # Note that this breaks the order of data inside the batch.
-                    # Please take care when you implement group based adv computation such as GRPO and rloo
+
                     if self.config.trainer.balance_batch:
                         self._balance_batch(batch_ori, metrics=metrics)
                         self._balance_batch(batch_aug, metrics=metrics)
-                    # breakpoint()
-                    # compute global_valid tokens
+
                     batch_ori.meta_info["global_token_num"] = torch.sum(batch_ori.batch["attention_mask"], dim=-1).tolist()
                     batch_aug.meta_info["global_token_num"] = torch.sum(batch_aug.batch["attention_mask"], dim=-1).tolist()
                     
                     with _timer("reward", timing_raw):
-                        # compute reward model score
-                        if self.use_rm:
-                            reward_tensor_ori = self.rm_wg.compute_rm_score(batch_ori)
-                            batch_ori = batch_ori.union(reward_tensor_ori)
-                            reward_tensor_aug = self.rm_wg.compute_rm_score(batch_aug)
-                            batch_aug = batch_aug.union(reward_tensor_aug)
+                        reward_tensor_ori, reward_tensor_aug = compute_reward_aug(batch_ori, batch_aug, self.reward_fn)
 
-                        if self.config.reward_model.launch_reward_fn_async:
-                            # TODO: add a async reward fn for augmentation
-                            pass
-                        else:
-                            reward_tensor_ori, reward_tensor_aug = compute_reward_aug(batch_ori, batch_aug, self.reward_fn)
-
-                    # recompute old_log_probs
                     with _timer("old_log_prob", timing_raw):
-                        # breakpoint()
+                        
                         old_log_prob_ori = self.actor_rollout_wg.compute_log_prob(batch_ori)
                         old_log_prob_aug = self.actor_rollout_wg.compute_log_prob(batch_aug)
 
@@ -1092,47 +1026,20 @@ class RayPPOTrainer:
                         batch_aug = batch_aug.union(old_log_prob_aug)
 
                     if self.use_reference_policy:
-                        # compute reference log_prob
                         with _timer("ref", timing_raw):
                             ref_log_prob_ori = self.ref_policy_wg.compute_ref_log_prob(batch_ori)
                             ref_log_prob_aug = self.ref_policy_wg.compute_ref_log_prob(batch_aug)
                             batch_ori = batch_ori.union(ref_log_prob_ori)
                             batch_aug = batch_aug.union(ref_log_prob_aug)
 
-                    # compute values
-                    if self.use_critic:
-                        with _timer("values", timing_raw):
-                            values_ori = self.critic_wg.compute_values(batch_ori)
-                            values_aug = self.critic_wg.compute_values(batch_aug)
-                            batch_ori = batch_ori.union(values_ori)
-                            batch_aug = batch_aug.union(values_aug)
-
                     with _timer("adv", timing_raw):
-                        # we combine with rule-based rm
                         reward_extra_infos_dict_ori: dict[str, list] = {}
                         reward_extra_infos_dict_aug: dict[str, list] = {}
-                        # if self.config.reward_model.launch_reward_fn_async:
-                        #     reward_tensor_ori, reward_extra_infos_dict_ori = ray.get(future_reward_ori)
-                        #     reward_tensor_aug, reward_extra_infos_dict_aug = ray.get(future_reward_aug)
                         batch_ori.batch["token_level_scores"] = reward_tensor_ori
                         batch_aug.batch["token_level_scores"] = reward_tensor_aug
 
-                        # print(f"{list(reward_extra_infos_dict_ori.keys())=}")
-                        # print(f"{list(reward_extra_infos_dict_aug.keys())=}")
-                        # if reward_extra_infos_dict_ori:
-                        #     batch_ori.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict_ori.items()})
-                        # if reward_extra_infos_dict_aug:
-                        #     batch_aug.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict_aug.items()})
-
-                        # compute rewards. apply_kl_penalty if available
-                        if self.config.algorithm.use_kl_in_reward:
-                            batch_ori, kl_metrics = apply_kl_penalty(batch_ori, kl_ctrl=self.kl_ctrl_in_reward, kl_penalty=self.config.algorithm.kl_penalty)
-                            metrics.update(kl_metrics)
-                        else:
-                            batch_ori.batch["token_level_rewards"] = batch_ori.batch["token_level_scores"]
-                            batch_aug.batch["token_level_rewards"] = batch_aug.batch["token_level_scores"]
-
-                        # compute advantages, executed on the driver process
+                        batch_ori.batch["token_level_rewards"] = batch_ori.batch["token_level_scores"]
+                        batch_aug.batch["token_level_rewards"] = batch_aug.batch["token_level_scores"]
 
                         norm_adv_by_std_in_grpo = self.config.algorithm.get("norm_adv_by_std_in_grpo", True)  # GRPO adv normalization factor
 
@@ -1147,23 +1054,13 @@ class RayPPOTrainer:
                             multi_turn=self.config.actor_rollout_ref.rollout.multi_turn.enable,
                         )
 
-                    # update critic
-                    if self.use_critic:
-                        with _timer("update_critic", timing_raw):
-                            critic_output = self.critic_wg.update_critic(batch_ori)
-                        critic_output_metrics = reduce_metrics(critic_output.meta_info["metrics"])
-                        metrics.update(critic_output_metrics)
-
-                    # implement critic warmup
                     if self.config.trainer.critic_warmup <= self.global_steps:
-                        # update actor
                         with _timer("update_actor", timing_raw):
                             batch_ori.meta_info["multi_turn"] = self.config.actor_rollout_ref.rollout.multi_turn.enable
                             actor_output = self.actor_rollout_wg.update_actor(batch_ori, batch_aug)
                         actor_output_metrics = reduce_metrics(actor_output.meta_info["metrics"])
                         metrics.update(actor_output_metrics)
 
-                    # Log rollout generations if enabled
                     rollout_data_dir = self.config.trainer.get("rollout_data_dir", None)
                     if rollout_data_dir:
                         with _timer("dump_rollout_generations", timing_raw):
@@ -1179,7 +1076,6 @@ class RayPPOTrainer:
                                 dump_path=rollout_data_dir,
                             )
 
-                    # validate
                     if self.val_reward_fn is not None and self.config.trainer.test_freq > 0 and (is_last_step or self.global_steps % self.config.trainer.test_freq == 0):
                         with _timer("testing", timing_raw):
                             val_metrics: dict = self._validate()
@@ -1191,21 +1087,18 @@ class RayPPOTrainer:
                         with _timer("save_checkpoint", timing_raw):
                             self._save_checkpoint()
 
-                # training metrics
                 metrics.update(
                     {
                         "training/global_step": self.global_steps,
                         "training/epoch": epoch,
                     }
                 )
-                # collect metrics
+
                 metrics.update(compute_data_metrics(batch=batch_ori, use_critic=self.use_critic))
                 metrics.update(compute_timing_metrics(batch=batch_ori, timing_raw=timing_raw))
-                # TODO: implement actual tflpo and theoretical tflpo
                 n_gpus = self.resource_pool_manager.get_n_gpus()
                 metrics.update(compute_throughout_metrics(batch=batch_ori, timing_raw=timing_raw, n_gpus=n_gpus))
-
-                # TODO: make a canonical logger that supports various backend
+                
                 logger.log(data=metrics, step=self.global_steps)
 
                 if is_last_step:
