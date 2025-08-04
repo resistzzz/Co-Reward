@@ -39,7 +39,6 @@ bash scripts/install_env.sh
 pip install -e . --no-deps
 ```
 
-
 ### Training on MATH Dataset
 
 Modify the WANDB_KEY in the `coreward/math_co_reward.sh` script to your own WANDB key, then run the following command:
@@ -72,6 +71,12 @@ python rewrite_questions.py \
 ```
 
 Then, you can train your LLM using Co-Reward following above script.
+
+
+### Dataset
+
+We release our rephrased MATH training set on [TMLR-Group-HF/CoReward-RephrasedMATH](https://huggingface.co/datasets/TMLR-Group-HF/CoReward-RephrasedMATH).
+
 
 ### Checkpoints
 
@@ -111,7 +116,7 @@ If you use our code or data, please cite our paper 📄!
   year={2025},
 }
 ```
-
+Please give us a **Star**, thanks very much for your focus on our work!!
 
 
 
