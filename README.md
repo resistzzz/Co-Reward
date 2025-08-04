@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/github/stars/resistzzz/Co-Reward?color=yellow&label=Star" alt="Stars" >
 </p>
 
-Our current version can be found in [📄 Paper](./CoReward-paper.pdf).
+Our current version can be found in [📄Paper](https://arxiv.org/abs/2508.00410).
 
 ![Pipeline](figs/CoReward_pipeline.png)
 
@@ -57,7 +57,39 @@ First, download the MATH dataset and prepare it using the following Python scrip
 python examples/data_preprocess/math_dataset.py
 ```
 
+Second, rephrase the training set using Qwen3-32B as follows:
+
+```
+python rewrite_questions.py \
+  --input_path data/math/train.parquet \
+  --output_jsonl data/math/train_rewrite_Qwen3-32B.jsonl \
+  --output_parquet data/math/train_rewrite_Qwen3-32B.parquet \
+  --output_original_parquet data/math/train_original.parquet \
+  --model_path $YOUR_Qwen3-32B_MODEL_PATH \
+  --tokenizer_path $YOUR_Qwen3-32B_TOKENIZER_PATH \
+  --question_column prompt \
+  --batch_size 128
+```
+
 Then, you can train your LLM using Co-Reward following above script.
+
+### Checkpoints
+
+We release all checkpoints trained by us, including our Co-Reward and baselines.
+
+#### Checkpoints of Co-Reward
+| Model Name | Model Size | Method | Hugging Face Link |
+| --- | --- | --- | --- |
+| TMLR-Group-HF/CoReward-Qwen2.5-3B | 3B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen2.5-3B) |
+| TMLR-Group-HF/CoReward-Qwen2.5-7B | 7B | Co-Reward | To be updated |
+| TMLR-Group-HF/CoReward-Qwen3-1.7B-Base | 1.7B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-1.7B-Base) |
+| TMLR-Group-HF/Co-Reward-Qwen3-4B-Base | 4B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-4B-Base) |
+| TMLR-Group-HF/Co-Reward-Qwen3-8B-Base | 8B | Co-Reward | To be updated |
+| TMLR-Group-HF/CoReward-Llama-3.2-3B-Instruct | 3B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Llama-3.2-3B-Instruct) |
+
+#### Checkpoints of Co-Reward
+Waiting to be uploaded.
+
 
 ### TODO
 This is an initial version of the code. We will make the following updates in the future.
@@ -70,7 +102,15 @@ This is an initial version of the code. We will make the following updates in th
 
 ## 📄 Citation
 
-Our Paper is pending on the Arxiv processing, currently accessible in this repo yet waiting to be online.
+If you use our code or data, please cite our paper 📄!
+```
+@article{zhang2025coreward,
+  title={Co-Reward: Self-supervised Reinforcement Learning for Large Language Model Reasoning via Contrastive Agreement}, 
+  author={Zizhuo Zhang and Jianing Zhu and Xinmu Ge and Zihua Zhao and Zhanke Zhou and Xuan Li and Xiao Feng and Jiangchao Yao and Bo Han},
+  journal={arXiv preprint arXiv:2508.00410}
+  year={2025},
+}
+```
 
 
 
