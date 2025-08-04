@@ -86,13 +86,13 @@ We release all checkpoints trained by us, including our Co-Reward and baselines.
 | Model Name | Model Size | Method | Hugging Face Link |
 | --- | --- | --- | --- |
 | TMLR-Group-HF/CoReward-Qwen2.5-3B | 3B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen2.5-3B) |
-| TMLR-Group-HF/CoReward-Qwen2.5-7B | 7B | Co-Reward | To be updated |
+| TMLR-Group-HF/CoReward-Qwen2.5-7B | 7B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen2.5-7B) |
 | TMLR-Group-HF/CoReward-Qwen3-1.7B-Base | 1.7B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-1.7B-Base) |
 | TMLR-Group-HF/Co-Reward-Qwen3-4B-Base | 4B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-4B-Base) |
-| TMLR-Group-HF/Co-Reward-Qwen3-8B-Base | 8B | Co-Reward | To be updated |
+| TMLR-Group-HF/Co-Reward-Qwen3-8B-Base | 8B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-8B-Base) |
 | TMLR-Group-HF/CoReward-Llama-3.2-3B-Instruct | 3B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Llama-3.2-3B-Instruct) |
 
-#### Checkpoints of Co-Reward
+#### Checkpoints of Baselines
 Waiting to be uploaded.
 
 
@@ -100,7 +100,7 @@ Waiting to be uploaded.
 This is an initial version of the code. We will make the following updates in the future.
 - [ ] [Models] Release all of our trained LLM checkpoints
 - [ ] [Code] Update the evaluation code
-- [ ] [Paper] Update the Arxiv paper link
+- [x] [Paper] Update the Arxiv paper link
 - [x] [Environment] Update the runing environment file
 - [ ] [Readme] Update the README
 
