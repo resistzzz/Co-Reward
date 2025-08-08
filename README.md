@@ -88,12 +88,49 @@ We release all checkpoints trained by us, including our Co-Reward and baselines.
 | TMLR-Group-HF/CoReward-Qwen2.5-3B | 3B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen2.5-3B) |
 | TMLR-Group-HF/CoReward-Qwen2.5-7B | 7B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen2.5-7B) |
 | TMLR-Group-HF/CoReward-Qwen3-1.7B-Base | 1.7B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-1.7B-Base) |
-| TMLR-Group-HF/Co-Reward-Qwen3-4B-Base | 4B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-4B-Base) |
-| TMLR-Group-HF/Co-Reward-Qwen3-8B-Base | 8B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-8B-Base) |
+| TMLR-Group-HF/CoReward-Qwen3-4B-Base | 4B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-4B-Base) |
+| TMLR-Group-HF/CoReward-Qwen3-8B-Base | 8B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Qwen3-8B-Base) |
 | TMLR-Group-HF/CoReward-Llama-3.2-3B-Instruct | 3B | Co-Reward | [View Model](https://huggingface.co/TMLR-Group-HF/CoReward-Llama-3.2-3B-Instruct) |
 
-#### Checkpoints of Baselines
-Waiting to be uploaded.
+#### Checkpoints of Ground-Truth GRPO (GT-GRPO)
+| Model Name | Model Size | Method | Hugging Face Link |
+| --- | --- | --- | --- |
+| TMLR-Group-HF/GT-Qwen2.5-3B | 3B | GT-GRPO | To be updated |
+| TMLR-Group-HF/GT-Qwen2.5-7B | 7B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen2.5-7B) |
+| TMLR-Group-HF/GT-Qwen3-1.7B-Base | 1.7B | GT-GRPO | To be updated |
+| TMLR-Group-HF/GT-Qwen3-4B-Base | 4B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen3-4B-Base) |
+| TMLR-Group-HF/GT-Qwen3-8B-Base | 8B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen3-8B-Base) |
+| TMLR-Group-HF/GT-Llama-3.2-3B-Instruct | 3B | GT-GRPO | To be updated |
+
+#### Checkpoints of Self-Certainty
+| Model Name | Model Size | Method | Hugging Face Link |
+| --- | --- | --- | --- |
+| TMLR-Group-HF/Self-Certainty-Qwen2.5-3B | 3B | Self-Certainty | To be updated |
+| TMLR-Group-HF/Self-Certainty-Qwen2.5-7B | 7B | Self-Certainty | [View Model](https://huggingface.co/TMLR-Group-HF/Self-Certainty-Qwen2.5-7B) |
+| TMLR-Group-HF/Self-Certainty-Qwen3-1.7B-Base | 1.7B | Self-Certainty | To be updated |
+| TMLR-Group-HF/Self-Certainty-Qwen3-4B-Base | 4B | Self-Certainty | [View Model](https://huggingface.co/TMLR-Group-HF/Self-Certainty-Qwen3-4B-Base) |
+| TMLR-Group-HF/Self-Certainty-Qwen3-8B-Base | 8B | Self-Certainty | [View Model](https://huggingface.co/TMLR-Group-HF/Self-Certainty-Qwen3-8B-Base) |
+| TMLR-Group-HF/Self-Certainty-Llama-3.2-3B-Instruct | 3B | Self-Certainty | To be updated |
+
+#### Checkpoints of Entropy Minimization
+| Model Name | Model Size | Method | Hugging Face Link |
+| --- | --- | --- | --- |
+| TMLR-Group-HF/Entropy-Qwen2.5-3B | 3B | Entropy | To be updated |
+| TMLR-Group-HF/Entropy-Qwen2.5-7B | 7B | Entropy | To be updated |
+| TMLR-Group-HF/Entropy-Qwen3-1.7B-Base | 1.7B | Entropy | To be updated |
+| TMLR-Group-HF/Entropy-Qwen3-4B-Base | 4B | Entropy | [View Model](https://huggingface.co/TMLR-Group-HF/Entropy-Qwen3-4B-Base) |
+| TMLR-Group-HF/Entropy-Qwen3-8B-Base | 8B | Entropy | [View Model](https://huggingface.co/TMLR-Group-HF/Entropy-Qwen3-8B-Base) |
+| TMLR-Group-HF/Entropy-Llama-3.2-3B-Instruct | 3B | Entropy | To be updated |
+
+#### Checkpoints of Majority-Voting
+| Model Name | Model Size | Method | Hugging Face Link |
+| --- | --- | --- | --- |
+| TMLR-Group-HF/Entropy-Qwen2.5-3B | 3B | Entropy | To be updated |
+| TMLR-Group-HF/Entropy-Qwen2.5-7B | 7B | Entropy | [View Model](https://huggingface.co/TMLR-Group-HF/Majority-Voting-Qwen2.5-7B) |
+| TMLR-Group-HF/Entropy-Qwen3-1.7B-Base | 1.7B | Entropy | To be updated |
+| TMLR-Group-HF/Entropy-Qwen3-4B-Base | 4B | Entropy | [View Model](https://huggingface.co/TMLR-Group-HF/Majority-Voting-Qwen3-4B-Base) |
+| TMLR-Group-HF/Entropy-Qwen3-8B-Base | 8B | Entropy | [View Model](https://huggingface.co/TMLR-Group-HF/Majority-Voting-Qwen3-8B-Base) |
+| TMLR-Group-HF/Entropy-Llama-3.2-3B-Instruct | 3B | Entropy | To be updated |
 
 
 ### TODO
