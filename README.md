@@ -95,7 +95,7 @@ We release all checkpoints trained by us, including our Co-Reward and baselines.
 #### Checkpoints of Ground-Truth GRPO (GT-GRPO)
 | Model Name | Model Size | Method | Hugging Face Link |
 | --- | --- | --- | --- |
-| TMLR-Group-HF/GT-Qwen2.5-3B | 3B | GT-GRPO | [view Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen2.5-3B) |
+| TMLR-Group-HF/GT-Qwen2.5-3B | 3B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen2.5-3B) |
 | TMLR-Group-HF/GT-Qwen2.5-7B | 7B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen2.5-7B) |
 | TMLR-Group-HF/GT-Qwen3-1.7B-Base | 1.7B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen3-1.7B-Base) |
 | TMLR-Group-HF/GT-Qwen3-4B-Base | 4B | GT-GRPO | [View Model](https://huggingface.co/TMLR-Group-HF/GT-Qwen3-4B-Base) |
