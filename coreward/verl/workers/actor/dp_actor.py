@@ -389,7 +389,7 @@ class DataParallelPPOActor(BasePPOActor):
                     if multi_turn:
                         response_mask_aug = data_a["loss_mask"][:, -response_length_aug:]
                     else:
-                        response_mask_aug = attention_mask_ori[:, -response_length_aug:]
+                        response_mask_aug = attention_mask_aug[:, -response_length_aug:]
 
                     old_log_prob_ori = data_o["old_log_probs"]
                     advantages_ori = data_o["advantages"]
